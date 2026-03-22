@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worker Test</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; background: #111; color: #fff; }
+  button { background: #4f8eff; border: none; color: white; padding: 14px 28px; border-radius: 10px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
+  pre { background: #1a1a2e; padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; word-break: break-all; margin-top: 15px; }
+  .ok { color: #00d4aa; }
+  .err { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<h2>🔧 AuraGen Worker Test</h2>
+<p style="color:#aaa;">Yeh page worker ka exact error dikhayega</p>
+<button onclick="testWorker()">▶ Test Worker</button>
+<pre id="result">Result yahan aayega...</pre>
+
+<script>
+async function testWorker() {
+  const el = document.getElementById('result');
+  el.textContent = 'Testing...';
+  el.className = '';
+  try {
+    const res = await fetch('https://auragen-worker.vinodkumarpursh.workers.dev/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'a cute dog', style: 'Photorealistic', ratio: '1:1' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      el.textContent = '✅ SUCCESS! Image generate ho gayi!';
+      el.className = 'ok';
+      const img = document.createElement('img');
+      img.src = data.image;
+      img.style = 'width:100%;border-radius:10px;margin-top:15px;';
+      document.body.appendChild(img);
+    } else {
+      el.textContent = '❌ ERROR:\n' + JSON.stringify(data, null, 2);
+      el.className = 'err';
+    }
+  } catch(e) {
+    el.textContent = '❌ FETCH ERROR:\n' + e.message;
+    el.className = 'err';
+  }
+}
+</script>
+</body>
+</html>
