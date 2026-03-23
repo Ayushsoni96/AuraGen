@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AuraGen AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050810;
+    --surface: #0d1120;
+    --surface2: #131929;
+    --border: rgba(255,255,255,0.07);
+    --border-glow: rgba(120,180,255,0.15);
+    --text-primary: #f0f4ff;
+    --text-secondary: #7a8aaa;
+    --text-muted: #3d4a62;
+    --accent: #4f8eff;
+    --accent2: #a259ff;
+    --accent3: #00d4aa;
+    --glow1: rgba(79,142,255,0.12);
+    --glow2: rgba(162,89,255,0.08);
+    --glow3: rgba(0,212,170,0.06);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Aurora Background */
+  .aurora-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .aurora-bg::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: -20%;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(ellipse, rgba(79,142,255,0.10) 0%, transparent 70%);
+    animation: drift1 12s ease-in-out infinite alternate;
+  }
+  .aurora-bg::after {
+    content: '';
+    position: absolute;
+    top: -10%;
+    right: -20%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(162,89,255,0.10) 0%, transparent 70%);
+    animation: drift2 15s ease-in-out infinite alternate;
+  }
+  .aurora-orb {
+    position: absolute;
+    bottom: 0;
+    left: 30%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(ellipse, rgba(0,212,170,0.06) 0%, transparent 70%);
+    animation: drift3 18s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(5%,8%) scale(1.1); } }
+  @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-8%,5%) scale(1.15); } }
+  @keyframes drift3 { from { transform: translate(0,0) scale(1); } to { transform: translate(5%,-8%) scale(1.2); } }
+
+  /* Noise overlay */
+  .noise {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* App wrapper */
+  .app {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #4f8eff, #a259ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(79,142,255,0.35);
+  }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #e8f0ff 0%, #a259ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.3px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .credits-pill {
+    background: rgba(79,142,255,0.1);
+    border: 1px solid rgba(79,142,255,0.2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #7eb3ff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .credits-pill span { font-size: 14px; }
+
+  /* Hero section */
+  .hero {
+    padding: 28px 20px 20px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,212,170,0.08);
+    border: 1px solid rgba(0,212,170,0.18);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #00d4aa;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00d4aa;
+    box-shadow: 0 0 8px #00d4aa;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .hero h1 .gradient-text {
+    background: linear-gradient(90deg, #4f8eff 0%, #a259ff 50%, #ff6eb4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* Main card */
+  .main-card {
+    margin: 0 16px;
+    background: rgba(13,17,32,0.8);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.02), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .main-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79,142,255,0.4), rgba(162,89,255,0.4), transparent);
+  }
+
+  /* Style selector */
+  .style-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .style-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .chip.active {
+    background: rgba(79,142,255,0.12);
+    border-color: rgba(79,142,255,0.35);
+    color: #7eb3ff;
+  }
+  .chip:hover { border-color: rgba(255,255,255,0.15); color: var(--text-primary); }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* Prompt area */
+  .prompt-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .prompt-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .prompt-box:focus-within {
+    border-color: rgba(79,142,255,0.4);
+    box-shadow: 0 0 0 3px rgba(79,142,255,0.06);
+  }
+  .prompt-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text-primary);
+    resize: none;
+    line-height: 1.6;
+    min-height: 80px;
+    caret-color: #4f8eff;
+  }
+  .prompt-textarea::placeholder { color: var(--text-muted); }
+  .prompt-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .prompt-hints {
+    display: flex;
+    gap: 6px;
+  }
+  .hint-tag {
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .hint-tag:hover { background: rgba(79,142,255,0.1); color: #7eb3ff; }
+  .char-count { font-size: 11px; color: var(--text-muted); }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 18px;
+    gap: 4px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .mode-btn.active {
+    background: rgba(79,142,255,0.12);
+    color: #7eb3ff;
+    border: 1px solid rgba(79,142,255,0.25);
+  }
+
+  /* Upload section */
+  .upload-section { margin-bottom: 16px; display: none; }
+  .upload-section.show { display: block; }
+  .upload-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .upload-zone {
+    border: 1.5px dashed rgba(79,142,255,0.25);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(79,142,255,0.03);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover {
+    border-color: rgba(79,142,255,0.5);
+    background: rgba(79,142,255,0.06);
+  }
+  .upload-zone.has-image {
+    border-style: solid;
+    border-color: rgba(79,142,255,0.4);
+    padding: 0;
+  }
+  .upload-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+  .upload-placeholder { pointer-events: none; }
+  .upload-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(79,142,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+  }
+  .upload-icon svg { width: 18px; height: 18px; }
+  .upload-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 3px; }
+  .upload-sub { font-size: 11px; color: var(--text-muted); }
+  .upload-preview {
+    display: none;
+    position: relative;
+  }
+  .upload-preview img {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+  .preview-overlay {
+    position: absolute;
+    bottom: 8px; right: 8px;
+    display: flex; gap: 6px;
+  }
+  .preview-btn {
+    background: rgba(5,8,16,0.8);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+  .preview-btn.danger { color: #ff6b6b; border-color: rgba(255,100,100,0.3); }
+
+  /* Strength slider */
+  .strength-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .strength-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .strength-slider { flex: 1; accent-color: #4f8eff; }
+  .strength-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: #7eb3ff;
+    min-width: 30px;
+    text-align: right;
+  }
+
+  /* Ratio selector */
+  .ratio-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .ratio-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .ratio-btn.active {
+    background: rgba(79,142,255,0.1);
+    border-color: rgba(79,142,255,0.3);
+  }
+  .ratio-btn:hover { border-color: rgba(255,255,255,0.12); }
+  .ratio-icon {
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.6;
+  }
+  .ratio-btn.active .ratio-icon { opacity: 1; color: #4f8eff; }
+  .ratio-btn span { font-size: 10px; color: var(--text-secondary); font-weight: 400; }
+  .ratio-btn.active span { color: #7eb3ff; }
+  .sq { width: 18px; height: 18px; }
+  .port { width: 14px; height: 20px; }
+  .land { width: 22px; height: 16px; }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #3b7aff 0%, #8b4fff 100%);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 24px rgba(79,142,255,0.3), 0 1px 0 rgba(255,255,255,0.1) inset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 32px rgba(79,142,255,0.4); }
+  .generate-btn:active { transform: translateY(0) scale(0.99); }
+  .generate-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  @keyframes shimmer { to { left: 200%; } }
+  .btn-icon { font-size: 18px; }
+  .btn-ad-note {
+    position: absolute;
+    right: 14px;
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.65;
+    font-family: 'DM Sans', sans-serif;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+
+  /* Recent generations */
+  .section {
+    padding: 20px 16px 0;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+  .see-all {
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+    opacity: 0.8;
+  }
+
+  /* Gallery grid */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .gallery-item {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .gallery-item.large {
+    grid-column: span 3;
+    aspect-ratio: unset;
+    min-height: 260px;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+    display: block;
+  }
+  .gallery-item:hover img { transform: scale(1.03); }
+  .gallery-item .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(5,8,16,0.8) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 10px;
+  }
+  .gallery-item:hover .overlay { opacity: 1; }
+  .overlay-prompt { font-size: 10px; color: rgba(255,255,255,0.85); line-height: 1.4; font-weight: 300; flex:1; margin-right:8px; }
+
+  /* Fullscreen viewer */
+  .viewer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .viewer.open { display: flex; }
+  .viewer img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 12px;
+    object-fit: contain;
+  }
+  .viewer-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .viewer-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: #fff;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  .viewer-btn.primary { background: rgba(79,142,255,0.3); border-color: rgba(79,142,255,0.5); }
+
+  /* Placeholder cards */
+  .placeholder-card {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .placeholder-card.large {
+    grid-column: span 2;
+    grid-row: span 2;
+    aspect-ratio: unset;
+    min-height: 160px;
+  }
+  .placeholder-inner {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(79,142,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .placeholder-inner svg { opacity: 0.3; }
+  .placeholder-text { font-size: 10px; color: var(--text-muted); }
+
+  /* Trending prompts */
+  .trending {
+    margin: 16px 0 0;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .trending::-webkit-scrollbar { display: none; }
+  .trending-card {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    width: 130px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .trending-card:hover { border-color: rgba(79,142,255,0.3); }
+  .trending-thumb {
+    width: 100%;
+    height: 70px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .trending-name { font-size: 11px; font-weight: 500; color: var(--text-secondary); line-height: 1.3; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    background: rgba(5,8,16,0.9);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px 20px;
+    display: flex;
+    justify-content: space-around;
+    backdrop-filter: blur(20px);
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+  }
+  .nav-item.active { opacity: 1; }
+  .nav-item svg { width: 22px; height: 22px; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--text-secondary); }
+  .nav-item.active .nav-label { color: #4f8eff; }
+  .nav-item.active svg path, .nav-item.active svg circle { stroke: #4f8eff; }
+
+  /* Spacer */
+  .spacer { height: 20px; }
+
+  /* Loading state */
+  .generating {
+    display: none;
+    margin: 16px 0 0;
+    background: rgba(79,142,255,0.06);
+    border: 1px solid rgba(79,142,255,0.15);
+    border-radius: 14px;
+    padding: 16px;
+    align-items: center;
+    gap: 12px;
+  }
+  .generating.show { display: flex; }
+  .gen-spinner {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(79,142,255,0.2);
+    border-top-color: #4f8eff;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .gen-info { flex: 1; }
+  .gen-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+  .gen-sub { font-size: 11px; color: var(--text-secondary); }
+  .gen-bar {
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .gen-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4f8eff, #a259ff);
+    border-radius: 2px;
+    animation: fill-bar 4s ease-in-out infinite;
+  }
+  @keyframes fill-bar { 0% { width: 0%; } 80% { width: 90%; } 100% { width: 95%; } }
+
+  /* Ad banner */
+  .ad-banner {
+    margin: 12px 16px 0;
+    background: linear-gradient(135deg, rgba(255,200,50,0.06), rgba(255,150,50,0.06));
+    border: 1px solid rgba(255,200,50,0.15);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ad-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(255,180,50,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .ad-text { flex: 1; }
+  .ad-title { font-size: 12px; font-weight: 500; color: rgba(255,200,100,0.9); margin-bottom: 1px; }
+  .ad-sub { font-size: 10px; color: rgba(255,180,80,0.6); }
+  .ad-btn {
+    background: rgba(255,180,50,0.15);
+    border: 1px solid rgba(255,180,50,0.25);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,200,100,0.9);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora-bg">
+  <div class="aurora-orb"></div>
+</div>
+<div class="noise"></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L15.5 8.5L22 9.5L17 14.5L18.5 21L12 17.5L5.5 21L7 14.5L2 9.5L8.5 8.5L12 2Z" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <span class="logo-text">AuraGen AI</span>
+    </div>
+    <div class="header-right">
+      <div class="credits-pill">
+        <span>⚡</span> 12 left
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Powered by Gemini Imagen</div>
+    <h1>Turn words into<br><span class="gradient-text">stunning visuals</span></h1>
+    <p>Describe your vision. Watch AI bring it to life.</p>
+  </div>
+
+  <!-- Main Card -->
+  <div class="main-card">
+    <!-- Mode Toggle -->
+    <div class="mode-toggle" style="display:none;">
+      <button class="mode-btn active" onclick="switchMode('text', this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Text to Image
+      </button>
+      <button class="mode-btn" onclick="switchMode('image', this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Image to Image
+      </button>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section" id="upload-section" style="display:none!important;">
+      <div class="upload-label">Reference Photo</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*" onchange="handleUpload(this)">
+        <div class="upload-placeholder" id="upload-placeholder">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4f8eff" stroke-width="1.5" stroke-linecap="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+          </div>
+          <div class="upload-title">Upload your photo</div>
+          <div class="upload-sub">JPG, PNG, WEBP · Max 10MB</div>
+        </div>
+        <div class="upload-preview" id="upload-preview">
+          <img id="preview-img" src="" alt="preview">
+          <div class="preview-overlay">
+            <div class="preview-btn" onclick="changeImage(event)">Change</div>
+            <div class="preview-btn danger" onclick="removeImage(event)">Remove</div>
+          </div>
+        </div>
+      </div>
+      <div class="strength-row">
+        <span class="strength-label">AI Strength</span>
+        <input type="range" class="strength-slider" id="strength" min="0" max="100" value="70" oninput="document.getElementById('strength-val').textContent=this.value+'%'">
+        <span class="strength-val" id="strength-val">70%</span>
+      </div>
+    </div>
+
+    <!-- Style selector -->
+    <div class="style-label">Style</div>
+    <div class="style-chips">
+      <div class="chip active" onclick="selectChip(this)"><div class="chip-dot"></div>Photorealistic</div>
+      <div class="chip" onclick="selectChip(this)"><div class="chip-dot"></div>Anime</div>
+      <div class="chip" onclick="selectChip(this)"><div class="chip-dot"></div>Oil Paint</div>
+      <div class="chip" onclick="selectChip(this)"><div class="chip-dot"></div>3D Render</div>
+      <div class="chip" onclick="selectChip(this)"><div class="chip-dot"></div>Sketch</div>
+    </div>
+
+    <!-- Prompt -->
+    <div class="prompt-label">Your Prompt</div>
+    <div class="prompt-box">
+      <textarea class="prompt-textarea" id="prompt" placeholder="A futuristic city at sunset, neon lights reflecting on rain-soaked streets, cinematic..." oninput="updateCount()" maxlength="300"></textarea>
+      <div class="prompt-footer">
+        <div class="prompt-hints">
+          <div class="hint-tag" onclick="addHint('cinematic lighting')">+ cinematic</div>
+          <div class="hint-tag" onclick="addHint('4K ultra detailed')">+ 4K</div>
+          <div class="hint-tag" onclick="addHint('dramatic shadows')">+ dramatic</div>
+        </div>
+        <div class="char-count" id="char-count">0/300</div>
+      </div>
+    </div>
+
+    <!-- Aspect ratio -->
+    <div class="ratio-row">
+      <div class="ratio-btn" onclick="selectRatio(this)">
+        <svg class="ratio-icon sq" viewBox="0 0 18 18"><rect x="0.75" y="0.75" width="16.5" height="16.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>1:1</span>
+      </div>
+      <div class="ratio-btn active" onclick="selectRatio(this)">
+        <svg class="ratio-icon port" viewBox="0 0 14 20"><rect x="0.75" y="0.75" width="12.5" height="18.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>9:16</span>
+      </div>
+      <div class="ratio-btn" onclick="selectRatio(this)">
+        <svg class="ratio-icon land" viewBox="0 0 22 16"><rect x="0.75" y="0.75" width="20.5" height="14.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>16:9</span>
+      </div>
+      <div class="ratio-btn" onclick="selectRatio(this)">
+        <svg class="ratio-icon" style="width:16px;height:20px" viewBox="0 0 16 20"><rect x="0.75" y="0.75" width="14.5" height="18.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>4:5</span>
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <button class="generate-btn" onclick="startGenerate()">
+      <span class="btn-icon">✦</span>
+      Generate Image
+      <span class="btn-ad-note">1 Ad</span>
+    </button>
+
+    <!-- Generating state -->
+    <div class="generating" id="gen-state">
+      <div class="gen-spinner"></div>
+      <div class="gen-info">
+        <div class="gen-title">Creating your image...</div>
+        <div class="gen-sub">Ad completed · Generating with AI</div>
+        <div class="gen-bar"><div class="gen-bar-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ad notice -->
+  <div class="ad-banner">
+    <div class="ad-icon">🎬</div>
+    <div class="ad-text">
+      <div class="ad-title">Watch 1 ad per generation</div>
+      <div class="ad-sub">Short rewarded ad · Completely free</div>
+    </div>
+    <div class="ad-btn">How?</div>
+  </div>
+
+  <!-- Recent -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Recent Creations</div>
+      <div class="see-all">See all →</div>
+    </div>
+    <div class="gallery">
+      <div class="placeholder-card large">
+        <div class="placeholder-inner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        </div>
+        <div class="placeholder-text">Generate first image</div>
+      </div>
+      <div class="placeholder-card">
+        <div class="placeholder-inner" style="width:24px;height:24px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </div>
+      <div class="placeholder-card">
+        <div class="placeholder-inner" style="width:24px;height:24px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trending prompts -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Trending Styles</div>
+    </div>
+    <div class="trending">
+      <div class="trending-card" onclick="usePrompt('Cyberpunk samurai warrior, neon Tokyo')">
+        <div class="trending-thumb" style="background: linear-gradient(135deg,#1a0a2e,#2d0050);">⚔️</div>
+        <div class="trending-name">Cyberpunk Warrior</div>
+      </div>
+      <div class="trending-card" onclick="usePrompt('Magical forest with glowing mushrooms, ethereal mist')">
+        <div class="trending-thumb" style="background: linear-gradient(135deg,#0a2010,#0d3020);">🍄</div>
+        <div class="trending-name">Enchanted Forest</div>
+      </div>
+      <div class="trending-card" onclick="usePrompt('Astronaut floating in colorful nebula, space art')">
+        <div class="trending-thumb" style="background: linear-gradient(135deg,#0a0a30,#1a0a40);">🚀</div>
+        <div class="trending-name">Space Explorer</div>
+      </div>
+      <div class="trending-card" onclick="usePrompt('Portrait of a goddess made of ocean waves')">
+        <div class="trending-thumb" style="background: linear-gradient(135deg,#001a2e,#003050);">🌊</div>
+        <div class="trending-name">Ocean Goddess</div>
+      </div>
+      <div class="trending-card" onclick="usePrompt('Steampunk clockwork dragon, golden gears')">
+        <div class="trending-thumb" style="background: linear-gradient(135deg,#1e1000,#3a1e00);">🐉</div>
+        <div class="trending-name">Steam Dragon</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- Fullscreen Viewer -->
+  <div class="viewer" id="viewer" onclick="closeViewer()">
+    <img id="viewer-img" src="" alt="">
+    <div class="viewer-bar" onclick="event.stopPropagation()">
+      <div class="viewer-btn" onclick="closeViewer()">✕ Close</div>
+      <a class="viewer-btn primary" id="viewer-dl" href="" download="auragen.jpg">⬇ Save</a>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#4f8eff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="nav-label" style="color:#4f8eff">Home</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="8" height="8" rx="1.5" stroke="white" stroke-width="1.5"/>
+        <rect x="13" y="3" width="8" height="8" rx="1.5" stroke="white" stroke-width="1.5"/>
+        <rect x="3" y="13" width="8" height="8" rx="1.5" stroke="white" stroke-width="1.5"/>
+        <rect x="13" y="13" width="8" height="8" rx="1.5" stroke="white" stroke-width="1.5"/>
+      </svg>
+      <span class="nav-label">Gallery</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.5"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Profile</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" stroke="white" stroke-width="1.5"/>
+        <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Settings</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORKER_URL = "https://auragen-worker.vinodkumarpursh.workers.dev/";
+const ADSGRAM_BLOCK_ID = "24697";
+
+let AdController = null;
+
+function selectChip(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectRatio(el) {
+  document.querySelectorAll('.ratio-btn').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+}
+function updateCount() {
+  const v = document.getElementById('prompt').value.length;
+  document.getElementById('char-count').textContent = v + '/300';
+}
+function addHint(text) {
+  const t = document.getElementById('prompt');
+  const cur = t.value.trim();
+  t.value = cur ? cur + ', ' + text : text;
+  updateCount();
+  t.focus();
+}
+function usePrompt(text) {
+  document.getElementById('prompt').value = text;
+  updateCount();
+  document.getElementById('prompt').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function switchMode(mode, btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const uploadSection = document.getElementById('upload-section');
+  if (mode === 'image') {
+    uploadSection.classList.add('show');
+  } else {
+    uploadSection.classList.remove('show');
+  }
+}
+function handleUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('upload-placeholder').style.display = 'none';
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('upload-zone').classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+function changeImage(e) {
+  e.stopPropagation();
+  document.getElementById('file-input').click();
+}
+function removeImage(e) {
+  e.stopPropagation();
+  document.getElementById('preview-img').src = '';
+  document.getElementById('upload-placeholder').style.display = 'block';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-zone').classList.remove('has-image');
+  document.getElementById('file-input').value = '';
+}
+
+// Image generate karo - Hugging Face FLUX.1 Schnell
+async function generateImage() {
+  const prompt = document.getElementById('prompt').value.trim();
+  const activeChip = document.querySelector('.chip.active');
+  const style = activeChip ? activeChip.textContent.replace(/^[•\s]+/, '').trim() : 'Photorealistic';
+  const ratio = document.querySelector('.ratio-btn.active span')?.textContent?.trim().replace(/[^0-9:]/g,'') || '1:1';
+
+  const genState = document.getElementById('gen-state');
+  const btn = document.querySelector('.generate-btn');
+  genState.classList.add('show');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  document.getElementById('gen-state').querySelector('.gen-sub').textContent = 'Generating with AI... (10-20 sec)';
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, style, ratio })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error: ' + (err.error || 'Try again!'));
+      return;
+    }
+
+    // Image as blob
+    const blob = await res.blob();
+    const imageUrl = URL.createObjectURL(blob);
+    showGeneratedImage(imageUrl, prompt);
+
+  } catch(err) {
+    alert('Network error: ' + err.message);
+  } finally {
+    genState.classList.remove('show');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
+function showGeneratedImage(imageUrl, prompt) {
+  const gallery = document.querySelector('.gallery');
+  // Remove all placeholders
+  gallery.querySelectorAll('.placeholder-card').forEach(p => p.remove());
+
+  const item = document.createElement('div');
+  item.className = 'gallery-item large';
+  item.onclick = () => openViewer(imageUrl);
+  item.innerHTML = `
+    <img src="${imageUrl}" alt="${prompt}">
+    <div class="overlay">
+      <div class="overlay-prompt">${prompt}</div>
+      <a href="${imageUrl}" download="auragen-${Date.now()}.jpg" onclick="event.stopPropagation()" style="background:rgba(79,142,255,0.8);border-radius:8px;padding:5px 12px;font-size:11px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0;">⬇ Save</a>
+    </div>
+  `;
+
+  gallery.prepend(item);
+  item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function openViewer(url) {
+  document.getElementById('viewer-img').src = url;
+  document.getElementById('viewer-dl').href = url;
+  document.getElementById('viewer').classList.add('open');
+}
+
+function closeViewer() {
+  document.getElementById('viewer').classList.remove('open');
+}
+
+async function startGenerate() {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) {
+    document.getElementById('prompt').focus();
+    document.querySelector('.prompt-box').style.borderColor = 'rgba(255,100,100,0.4)';
+    setTimeout(() => { document.querySelector('.prompt-box').style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  await generateImage();
+}
+</script>
+</body>
+</html>
