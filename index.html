@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AuraGen AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050810;--surface:#0d1120;--surface2:#131929;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f4ff;--muted:#7a8aaa;--dim:#3d4a62;
+  --blue:#4f8eff;--purple:#a259ff;--teal:#00d4aa;--pink:#ff6eb4;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ===== AURORA ===== */
+.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.aurora::before{content:'';position:absolute;top:-40%;left:-30%;width:80%;height:80%;background:radial-gradient(ellipse,rgba(79,142,255,0.13) 0%,transparent 65%);animation:a1 14s ease-in-out infinite alternate;will-change:transform}
+.aurora::after{content:'';position:absolute;top:-20%;right:-30%;width:70%;height:70%;background:radial-gradient(ellipse,rgba(162,89,255,0.11) 0%,transparent 65%);animation:a2 17s ease-in-out infinite alternate;will-change:transform}
+.aurora-orb{position:absolute;bottom:-10%;left:20%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(0,212,170,0.07) 0%,transparent 65%);animation:a3 20s ease-in-out infinite alternate}
+.aurora-orb2{position:absolute;top:30%;right:-10%;width:40%;height:40%;background:radial-gradient(ellipse,rgba(255,110,180,0.06) 0%,transparent 65%);animation:a4 25s ease-in-out infinite alternate}
+@keyframes a1{to{transform:translate(8%,12%) scale(1.15)}}
+@keyframes a2{to{transform:translate(-10%,8%) scale(1.2)}}
+@keyframes a3{to{transform:translate(8%,-12%) scale(1.25)}}
+@keyframes a4{to{transform:translate(-8%,15%) scale(1.1)}}
+
+/* Noise */
+.noise{position:fixed;inset:0;z-index:1;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none}
+
+/* ===== APP ===== */
+.app{position:relative;z-index:2;max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:90px}
+
+/* ===== HEADER ===== */
+.header{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;animation:fadeDown 0.6s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#4f8eff,#a259ff);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(79,142,255,0.4);animation:pulse-logo 3s ease-in-out infinite}
+@keyframes pulse-logo{0%,100%{box-shadow:0 0 24px rgba(79,142,255,0.4)}50%{box-shadow:0 0 36px rgba(162,89,255,0.5)}}
+.logo-text{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;background:linear-gradient(90deg,#e8f0ff,#a259ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.3px}
+.menu-btn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;gap:3px;flex-direction:column;padding:10px;transition:all 0.2s}
+.menu-btn:hover{background:rgba(79,142,255,0.1);border-color:rgba(79,142,255,0.3)}
+.menu-btn span{display:block;width:16px;height:1.5px;background:var(--muted);border-radius:2px;transition:all 0.3s}
+.menu-btn.open span:nth-child(1){transform:rotate(45deg) translate(3px,3px)}
+.menu-btn.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.menu-btn.open span:nth-child(3){transform:rotate(-45deg) translate(3px,-3px)}
+
+/* ===== SIDEBAR ===== */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0);z-index:500;backdrop-filter:blur(0px);transition:all 0.3s}
+.sidebar-overlay.open{display:block;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px)}
+.sidebar{position:fixed;top:0;right:-290px;width:290px;height:100vh;background:linear-gradient(180deg,#090d1c 0%,#060a16 100%);border-left:1px solid var(--border);z-index:501;transition:right 0.35s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar.open{right:0;box-shadow:-20px 0 60px rgba(0,0,0,0.5)}
+.sb-header{padding:28px 20px 20px;border-bottom:1px solid var(--border)}
+.sb-profile{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.sb-avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#4f8eff,#a259ff);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;box-shadow:0 0 20px rgba(79,142,255,0.3);flex-shrink:0}
+.sb-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.sb-plan{display:inline-flex;align-items:center;gap:4px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);border-radius:10px;padding:3px 8px;font-size:10px;font-weight:500;color:#00d4aa;margin-top:4px}
+.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sb-stat{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.sb-stat-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(90deg,#4f8eff,#a259ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sb-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.sb-menu{padding:16px}
+.sb-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s;margin-bottom:4px;font-size:13px;font-weight:400;color:var(--muted);border:1px solid transparent}
+.sb-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.sb-item.active{background:rgba(79,142,255,0.1);color:#7eb3ff;border-color:rgba(79,142,255,0.2)}
+.sb-icon{font-size:16px;width:20px;text-align:center}
+.sb-div{height:1px;background:var(--border);margin:8px 0}
+.sb-footer{margin-top:auto;padding:16px;border-top:1px solid var(--border);text-align:center}
+.sb-version{font-size:10px;color:var(--dim)}
+
+/* ===== HERO ===== */
+.hero{padding:24px 20px 18px;text-align:center;animation:fadeUp 0.7s ease 0.1s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);border-radius:20px;padding:6px 16px;font-size:11px;font-weight:500;color:#00d4aa;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#00d4aa;box-shadow:0 0 8px #00d4aa;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.hero h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1.15;letter-spacing:-0.6px;margin-bottom:10px}
+.grad{background:linear-gradient(90deg,#4f8eff 0%,#a259ff 50%,#ff6eb4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradShift 4s ease infinite}
+@keyframes gradShift{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(20deg)}}
+.hero p{font-size:13px;color:var(--muted);line-height:1.65;font-weight:300}
+
+/* ===== NAV TABS ===== */
+.nav-tabs{display:flex;gap:6px;padding:0 16px 16px;overflow-x:auto;scrollbar-width:none;animation:fadeUp 0.7s ease 0.2s both}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{flex-shrink:0;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:22px;padding:8px 16px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all 0.25s;white-space:nowrap;position:relative;overflow:hidden}
+.nav-tab::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,142,255,0.15),rgba(162,89,255,0.15));opacity:0;transition:opacity 0.25s}
+.nav-tab.active{border-color:rgba(79,142,255,0.4);color:#7eb3ff}
+.nav-tab.active::before{opacity:1}
+.nav-tab:hover{border-color:rgba(255,255,255,0.15);color:var(--text)}
+
+/* ===== SECTIONS ===== */
+.section{display:none;padding:0 16px;animation:sectionIn 0.35s ease}
+.section.active{display:block}
+@keyframes sectionIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ===== CARD ===== */
+.card{background:rgba(10,14,28,0.85);border:1px solid var(--border);border-radius:22px;padding:20px;backdrop-filter:blur(24px);position:relative;overflow:hidden;margin-bottom:14px;animation:fadeUp 0.5s ease both}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,255,0.5),rgba(162,89,255,0.5),transparent)}
+.card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(79,142,255,0.04) 0%,transparent 60%);pointer-events:none}
+
+.lbl{font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.lbl-icon{font-size:12px}
+
+/* ===== CHIPS ===== */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+.chip{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:22px;padding:7px 14px;font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:5px;white-space:nowrap;position:relative;overflow:hidden}
+.chip::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,142,255,0.12),rgba(162,89,255,0.12));opacity:0;transition:opacity 0.2s}
+.chip.active{border-color:rgba(79,142,255,0.45);color:#7eb3ff}
+.chip.active::before{opacity:1}
+.chip:hover{border-color:rgba(255,255,255,0.18);color:var(--text)}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;position:relative;z-index:1}
+.chip span{position:relative;z-index:1}
+
+/* ===== PROMPT ===== */
+.prompt-wrap{position:relative;margin-bottom:14px}
+.prompt-box{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:14px;transition:all 0.25s}
+.prompt-box:focus-within{border-color:rgba(79,142,255,0.5);box-shadow:0 0 0 4px rgba(79,142,255,0.06),0 0 20px rgba(79,142,255,0.08)}
+textarea{width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;color:var(--text);resize:none;min-height:85px;caret-color:#4f8eff;line-height:1.65}
+textarea::placeholder{color:var(--dim)}
+.prompt-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px}
+.hints{display:flex;gap:5px;flex-wrap:wrap}
+.hint{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:4px 9px;font-size:11px;color:var(--dim);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.hint:hover{background:rgba(79,142,255,0.1);border-color:rgba(79,142,255,0.25);color:#7eb3ff}
+.char-count{font-size:11px;color:var(--dim);flex-shrink:0}
+
+/* Prompt actions row */
+.prompt-actions{display:flex;gap:8px;margin-bottom:14px}
+.prompt-action-btn{flex:1;height:38px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.03);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s}
+.prompt-action-btn:hover{border-color:rgba(79,142,255,0.3);color:#7eb3ff;background:rgba(79,142,255,0.06)}
+.prompt-action-btn.loading-spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== RATIO ===== */
+.ratio-row{display:flex;gap:8px;margin-bottom:18px}
+.ratio-btn{flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:11px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.ratio-btn::before{content:'';position:absolute;inset:0;background:rgba(79,142,255,0.1);opacity:0;transition:opacity 0.2s}
+.ratio-btn.active{border-color:rgba(79,142,255,0.4)}
+.ratio-btn.active::before{opacity:1}
+.ratio-btn span{font-size:10px;color:var(--muted);position:relative;z-index:1}
+.ratio-btn.active span{color:#7eb3ff}
+.ratio-icon{position:relative;z-index:1}
+
+/* Quality selector */
+.quality-row{display:flex;gap:8px;margin-bottom:18px}
+.quality-btn{flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.quality-btn::before{content:'';position:absolute;inset:0;background:rgba(79,142,255,0.1);opacity:0;transition:opacity 0.2s}
+.quality-btn.active{border-color:rgba(79,142,255,0.4)}
+.quality-btn.active::before{opacity:1}
+.quality-btn .q-icon{font-size:16px;margin-bottom:3px}
+.quality-btn .q-name{font-size:11px;font-weight:500;color:var(--muted);display:block;position:relative;z-index:1}
+.quality-btn .q-desc{font-size:9px;color:var(--dim);display:block;position:relative;z-index:1;margin-top:1px}
+.quality-btn.active .q-name{color:#7eb3ff}
+
+/* ===== NEG PROMPT TOGGLE ===== */
+.neg-toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;user-select:none}
+.neg-toggle-text{font-size:11px;color:var(--dim);letter-spacing:0.5px;text-transform:uppercase;font-weight:500}
+.toggle-arrow{width:14px;height:14px;transition:transform 0.2s;color:var(--dim)}
+.toggle-arrow.open{transform:rotate(90deg)}
+.neg-prompt-box{display:none;margin-bottom:14px}
+.neg-prompt-box.show{display:block;animation:fadeUp 0.25s ease}
+
+/* ===== GENERATE BTN ===== */
+.gen-btn{width:100%;height:54px;border:none;border-radius:16px;background:linear-gradient(135deg,#3b7aff 0%,#8b4fff 100%);color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;position:relative;overflow:hidden;transition:all 0.2s;box-shadow:0 4px 24px rgba(79,142,255,0.35),inset 0 1px 0 rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.2px}
+.gen-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(79,142,255,0.45),inset 0 1px 0 rgba(255,255,255,0.12)}
+.gen-btn:active{transform:scale(0.99)}
+.gen-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none}
+.gen-btn::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);animation:shimmer 2.5s ease-in-out infinite}
+@keyframes shimmer{to{left:200%}}
+.btn-star{font-size:18px;animation:rotateStar 4s linear infinite}
+@keyframes rotateStar{0%,100%{transform:rotate(0deg) scale(1)}25%{transform:rotate(90deg) scale(1.1)}75%{transform:rotate(270deg) scale(0.9)}}
+
+/* ===== LOADING ===== */
+.loading-card{display:none;background:rgba(79,142,255,0.05);border:1px solid rgba(79,142,255,0.15);border-radius:18px;padding:20px;align-items:center;gap:16px;margin-top:12px;position:relative;overflow:hidden}
+.loading-card.show{display:flex;animation:fadeUp 0.3s ease}
+.loading-card::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(79,142,255,0.05),transparent);animation:loadingShine 2s ease-in-out infinite}
+@keyframes loadingShine{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+.spinner-wrap{width:44px;height:44px;flex-shrink:0;position:relative}
+.spinner-outer{width:44px;height:44px;border-radius:50%;border:2px solid rgba(79,142,255,0.15);border-top-color:#4f8eff;animation:spin 1s linear infinite;position:absolute}
+.spinner-inner{width:30px;height:30px;border-radius:50%;border:2px solid rgba(162,89,255,0.15);border-bottom-color:#a259ff;animation:spin 0.7s linear infinite reverse;position:absolute;top:7px;left:7px}
+.load-info{flex:1}
+.load-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+.load-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.load-steps{display:flex;gap:4px}
+.load-step{height:3px;flex:1;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden}
+.load-step.active .load-step-fill{height:100%;background:linear-gradient(90deg,#4f8eff,#a259ff);animation:prog 1.5s ease-in-out infinite}
+.load-step.done .load-step-fill{height:100%;background:linear-gradient(90deg,#4f8eff,#a259ff);width:100%}
+@keyframes prog{0%{width:0}50%{width:100%}100%{width:100%}}
+
+/* ===== AD BANNER ===== */
+.ad-banner{background:linear-gradient(135deg,rgba(255,200,50,0.06),rgba(255,150,50,0.04));border:1px solid rgba(255,200,50,0.15);border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.ad-icon{width:30px;height:30px;border-radius:9px;background:rgba(255,180,50,0.15);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ad-text{flex:1}
+.ad-title{font-size:12px;font-weight:500;color:rgba(255,200,100,0.9);margin-bottom:1px}
+.ad-sub{font-size:10px;color:rgba(255,180,80,0.55)}
+
+/* ===== SECTION HEADER ===== */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.see-all{font-size:12px;color:var(--blue);cursor:pointer;opacity:0.8;transition:opacity 0.2s}
+.see-all:hover{opacity:1}
+
+/* ===== GALLERY ===== */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.g-item{border-radius:14px;overflow:hidden;position:relative;cursor:pointer;background:var(--surface2);border:1px solid var(--border);aspect-ratio:1}
+.g-item.large{grid-column:span 3;aspect-ratio:unset;min-height:240px}
+.g-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s cubic-bezier(0.4,0,0.2,1)}
+.g-item:hover img{transform:scale(1.05)}
+.g-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(5,8,16,0.85) 0%,rgba(5,8,16,0.2) 50%,transparent 100%);opacity:0;transition:opacity 0.25s;display:flex;align-items:flex-end;justify-content:space-between;padding:12px}
+.g-item:hover .g-overlay{opacity:1}
+.g-prompt{font-size:10px;color:rgba(255,255,255,0.9);flex:1;margin-right:8px;line-height:1.4;font-weight:300}
+.g-save{background:rgba(79,142,255,0.85);border-radius:8px;padding:5px 10px;font-size:11px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0;backdrop-filter:blur(4px);transition:background 0.2s}
+.g-save:hover{background:rgba(79,142,255,1)}
+.placeholder-card{border-radius:14px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;aspect-ratio:1}
+.placeholder-card.large{grid-column:span 3;aspect-ratio:unset;min-height:200px}
+.ph-circle{width:44px;height:44px;border-radius:50%;background:rgba(79,142,255,0.07);display:flex;align-items:center;justify-content:center;border:1px solid rgba(79,142,255,0.12)}
+.ph-text{font-size:11px;color:var(--dim);text-align:center;padding:0 20px}
+
+/* ===== TRENDING ===== */
+.trending{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:20px}
+.trending::-webkit-scrollbar{display:none}
+.t-card{flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;width:130px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.t-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,142,255,0.08),transparent);opacity:0;transition:opacity 0.2s}
+.t-card:hover{border-color:rgba(79,142,255,0.3);transform:translateY(-2px)}
+.t-card:hover::before{opacity:1}
+.t-thumb{width:100%;height:72px;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.t-name{font-size:11px;font-weight:500;color:var(--muted);line-height:1.3}
+
+/* ===== HISTORY ===== */
+.history-wrap{margin-bottom:14px}
+.history-scroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.history-scroll::-webkit-scrollbar{display:none}
+.history-item{flex-shrink:0;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.2s;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-item:hover{border-color:rgba(79,142,255,0.3);color:#7eb3ff}
+
+/* ===== GALLERY SECTION ===== */
+.full-gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:52px;margin-bottom:14px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.empty-text{font-size:14px;font-weight:300}
+.empty-sub{font-size:12px;color:var(--dim);margin-top:6px}
+
+/* ===== VIEWER ===== */
+.viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:1000;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.viewer.open{display:flex;animation:viewerIn 0.3s ease}
+@keyframes viewerIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:none}}
+.viewer-img-wrap{max-width:100%;max-height:76vh;border-radius:16px;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,0.5)}
+.viewer-img-wrap img{width:100%;height:100%;object-fit:contain;display:block}
+.viewer-bar{display:flex;gap:10px;margin-top:18px}
+.viewer-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:12px;padding:11px 24px;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;transition:all 0.2s;backdrop-filter:blur(8px)}
+.viewer-btn:hover{background:rgba(255,255,255,0.16)}
+.viewer-btn.blue{background:rgba(79,142,255,0.3);border-color:rgba(79,142,255,0.5)}
+.viewer-btn.blue:hover{background:rgba(79,142,255,0.45)}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(5,8,16,0.94);border-top:1px solid var(--border);padding:12px 24px 20px;display:flex;justify-content:space-around;backdrop-filter:blur(24px);z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;opacity:0.38;transition:all 0.25s;padding:4px 10px;border-radius:12px}
+.nav-item.active{opacity:1;background:rgba(79,142,255,0.08)}
+.nav-item svg{width:22px;height:22px;transition:all 0.25s}
+.nav-item.active svg path,.nav-item.active svg rect,.nav-item.active svg circle{stroke:#4f8eff}
+.nav-lbl{font-size:10px;font-weight:500;color:var(--muted);transition:color 0.25s}
+.nav-item.active .nav-lbl{color:#4f8eff}
+
+/* Animations for staggered cards */
+.card:nth-child(1){animation-delay:0.05s}
+.card:nth-child(2){animation-delay:0.1s}
+.card:nth-child(3){animation-delay:0.15s}
+</style>
+</head>
+<body>
+
+<div class="aurora">
+  <div class="aurora-orb"></div>
+  <div class="aurora-orb2"></div>
+</div>
+<div class="noise"></div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sb-header">
+    <div class="sb-profile">
+      <div class="sb-avatar">A</div>
+      <div>
+        <div class="sb-name">AuraGen User</div>
+        <div class="sb-plan">✦ Free Plan</div>
+      </div>
+    </div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-stat-num" id="stat-imgs">0</div><div class="sb-stat-lbl">Images Made</div></div>
+      <div class="sb-stat"><div class="sb-stat-num" id="stat-today">0</div><div class="sb-stat-lbl">Today</div></div>
+    </div>
+  </div>
+  <div class="sb-menu">
+    <div class="sb-item active" onclick="navTo('image')"><span class="sb-icon">🎨</span> Image Generator</div>
+    <div class="sb-item" onclick="navTo('gallery')"><span class="sb-icon">🖼️</span> My Gallery</div>
+    <div class="sb-div"></div>
+    <div class="sb-item" onclick="clearHistory()"><span class="sb-icon">🗑️</span> Clear History</div>
+    <div class="sb-item" onclick="shareApp()"><span class="sb-icon">📤</span> Share App</div>
+    <div class="sb-item" onclick="showAbout()"><span class="sb-icon">ℹ️</span> About AuraGen</div>
+  </div>
+  <div class="sb-footer"><div class="sb-version">AuraGen AI v2.0 • Powered by Gemini</div></div>
+</div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2L15.5 8.5L22 9.5L17 14.5L18.5 21L12 17.5L5.5 21L7 14.5L2 9.5L8.5 8.5L12 2Z"/></svg>
+      </div>
+      <span class="logo-text">AuraGen AI</span>
+    </div>
+    <div class="menu-btn" id="menu-btn" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- Nav Tabs -->
+  <div style="padding:16px 16px 0">
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchTab('image',this)">🎨 Image Gen</div>
+      <div class="nav-tab" onclick="switchTab('gallery',this)">🖼️ Gallery</div>
+    </div>
+  </div>
+
+  <!-- ===== IMAGE GEN ===== -->
+  <div class="section active" id="sec-image">
+
+    <div class="hero">
+      <div class="hero-badge"><div class="badge-dot"></div>Powered by Gemini AI</div>
+      <h1>Turn words into<br><span class="grad">stunning visuals</span></h1>
+      <p>Describe anything. Watch AI create magic in seconds.</p>
+    </div>
+
+    <div class="card">
+      <!-- Style -->
+      <div class="lbl"><span class="lbl-icon">✨</span> Style</div>
+      <div class="chips" id="style-chips">
+        <div class="chip active" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Photorealistic</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Anime</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Oil Paint</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>3D Render</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Sketch</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Watercolor</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Pixel Art</span></div>
+        <div class="chip" onclick="selectChip(this,'style')"><div class="chip-dot"></div><span>Cinematic</span></div>
+      </div>
+
+      <!-- Mood -->
+      <div class="lbl"><span class="lbl-icon">🎭</span> Mood</div>
+      <div class="chips" id="mood-chips">
+        <div class="chip active" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Dramatic</span></div>
+        <div class="chip" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Peaceful</span></div>
+        <div class="chip" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Dark</span></div>
+        <div class="chip" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Vibrant</span></div>
+        <div class="chip" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Minimal</span></div>
+        <div class="chip" onclick="selectChip(this,'mood')"><div class="chip-dot"></div><span>Epic</span></div>
+      </div>
+
+      <!-- Prompt -->
+      <div class="lbl"><span class="lbl-icon">✍️</span> Your Prompt</div>
+      <div class="prompt-box">
+        <textarea id="img-prompt" placeholder="A futuristic samurai in neon-lit Tokyo rain, cinematic lighting..." oninput="updateCount()" maxlength="400"></textarea>
+        <div class="prompt-footer">
+          <div class="hints">
+            <div class="hint" onclick="addHint('cinematic lighting')">+ cinematic</div>
+            <div class="hint" onclick="addHint('4K ultra detailed')">+ 4K</div>
+            <div class="hint" onclick="addHint('bokeh background')">+ bokeh</div>
+            <div class="hint" onclick="addHint('golden hour')">+ golden hour</div>
+          </div>
+          <div class="char-count" id="char-count">0/400</div>
+        </div>
+      </div>
+
+      <!-- Prompt actions -->
+      <div class="prompt-actions">
+        <button class="prompt-action-btn" onclick="randomPrompt()" title="Random Prompt">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Random
+        </button>
+        <button class="prompt-action-btn" id="enhance-btn" onclick="enhancePrompt()" title="Enhance with AI">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Enhance
+        </button>
+        <button class="prompt-action-btn" onclick="clearPrompt()" title="Clear">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Clear
+        </button>
+      </div>
+
+      <!-- Ratio -->
+      <div class="lbl"><span class="lbl-icon">📐</span> Aspect Ratio</div>
+      <div class="ratio-row">
+        <div class="ratio-btn" onclick="selectRatio(this)">
+          <svg class="ratio-icon" width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="0.75" y="0.75" width="16.5" height="16.5" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>1:1</span>
+        </div>
+        <div class="ratio-btn active" onclick="selectRatio(this)">
+          <svg class="ratio-icon" width="14" height="20" viewBox="0 0 14 20" fill="none"><rect x="0.75" y="0.75" width="12.5" height="18.5" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>9:16</span>
+        </div>
+        <div class="ratio-btn" onclick="selectRatio(this)">
+          <svg class="ratio-icon" width="22" height="16" viewBox="0 0 22 16" fill="none"><rect x="0.75" y="0.75" width="20.5" height="14.5" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>16:9</span>
+        </div>
+        <div class="ratio-btn" onclick="selectRatio(this)">
+          <svg class="ratio-icon" width="16" height="20" viewBox="0 0 16 20" fill="none"><rect x="0.75" y="0.75" width="14.5" height="18.5" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>4:5</span>
+        </div>
+      </div>
+
+      <!-- Quality -->
+      <div class="lbl"><span class="lbl-icon">⚡</span> Quality</div>
+      <div class="quality-row">
+        <div class="quality-btn" onclick="selectQuality(this,'fast')">
+          <div class="q-icon">⚡</div>
+          <span class="q-name">Fast</span>
+          <span class="q-desc">~5 sec</span>
+        </div>
+        <div class="quality-btn active" onclick="selectQuality(this,'balanced')">
+          <div class="q-icon">✨</div>
+          <span class="q-name">Balanced</span>
+          <span class="q-desc">~15 sec</span>
+        </div>
+        <div class="quality-btn" onclick="selectQuality(this,'premium')">
+          <div class="q-icon">👑</div>
+          <span class="q-name">Premium</span>
+          <span class="q-desc">~30 sec</span>
+        </div>
+      </div>
+
+      <!-- Negative prompt -->
+      <div class="neg-toggle" onclick="toggleNeg()">
+        <div class="lbl" style="margin:0"><span class="lbl-icon">🚫</span> Negative Prompt</div>
+        <svg class="toggle-arrow" id="neg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="neg-prompt-box" id="neg-box">
+        <div class="prompt-box">
+          <textarea id="neg-prompt" placeholder="blurry, ugly, watermark, text, low quality..." style="min-height:50px" maxlength="200"></textarea>
+        </div>
+      </div>
+
+      <!-- Generate -->
+      <button class="gen-btn" id="gen-btn" onclick="generateImage()">
+        <span class="btn-star">✦</span>
+        Generate Image
+      </button>
+
+      <!-- Loading -->
+      <div class="loading-card" id="load-card">
+        <div class="spinner-wrap">
+          <div class="spinner-outer"></div>
+          <div class="spinner-inner"></div>
+        </div>
+        <div class="load-info">
+          <div class="load-title" id="load-title">Creating your image...</div>
+          <div class="load-sub" id="load-sub">Gemini AI is working its magic</div>
+          <div class="load-steps">
+            <div class="load-step active" id="step1"><div class="load-step-fill"></div></div>
+            <div class="load-step" id="step2"><div class="load-step-fill"></div></div>
+            <div class="load-step" id="step3"><div class="load-step-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ad banner -->
+    <div class="ad-banner">
+      <div class="ad-icon">🎬</div>
+      <div class="ad-text">
+        <div class="ad-title">Watch 1 short ad per generation</div>
+        <div class="ad-sub">Keeps AuraGen free for everyone</div>
+      </div>
+    </div>
+
+    <!-- Recent -->
+    <div class="sec-hdr">
+      <div class="sec-title">Recent Creations</div>
+      <div class="see-all" onclick="switchTab('gallery', document.querySelectorAll('.nav-tab')[1])">See all →</div>
+    </div>
+    <div class="gallery" id="img-gallery">
+      <div class="placeholder-card large">
+        <div class="ph-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(79,142,255,0.5)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+        <div class="ph-text">Your first creation<br>will appear here</div>
+      </div>
+      <div class="placeholder-card"><div class="ph-circle" style="width:28px;height:28px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(79,142,255,0.4)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div></div>
+      <div class="placeholder-card"><div class="ph-circle" style="width:28px;height:28px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(79,142,255,0.4)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div></div>
+    </div>
+
+    <!-- Prompt history -->
+    <div id="history-wrap" style="display:none">
+      <div class="sec-hdr"><div class="sec-title">Recent Prompts</div></div>
+      <div class="history-scroll" id="history-list"></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- Trending -->
+    <div class="sec-hdr"><div class="sec-title">Trending Styles</div></div>
+    <div class="trending">
+      <div class="t-card" onclick="usePrompt('Cyberpunk samurai warrior with katana, neon Tokyo rain')"><div class="t-thumb" style="background:linear-gradient(135deg,#1a0a2e,#2d0050)">⚔️</div><div class="t-name">Cyberpunk Warrior</div></div>
+      <div class="t-card" onclick="usePrompt('Magical glowing forest with giant mushrooms and fireflies, ethereal mist')"><div class="t-thumb" style="background:linear-gradient(135deg,#0a2010,#0d3020)">🍄</div><div class="t-name">Enchanted Forest</div></div>
+      <div class="t-card" onclick="usePrompt('Astronaut floating in colorful nebula, planets in background, hyperdetailed')"><div class="t-thumb" style="background:linear-gradient(135deg,#0a0a30,#1a0a40)">🚀</div><div class="t-name">Space Explorer</div></div>
+      <div class="t-card" onclick="usePrompt('Portrait of a goddess made of ocean waves and sea foam, epic fantasy')"><div class="t-thumb" style="background:linear-gradient(135deg,#001a2e,#003050)">🌊</div><div class="t-name">Ocean Goddess</div></div>
+      <div class="t-card" onclick="usePrompt('Steampunk clockwork dragon with golden gears and steam, intricate details')"><div class="t-thumb" style="background:linear-gradient(135deg,#1e1000,#3a1e00)">🐉</div><div class="t-name">Steam Dragon</div></div>
+      <div class="t-card" onclick="usePrompt('Cozy Japanese cafe in autumn, warm lighting, falling maple leaves, cinematic')"><div class="t-thumb" style="background:linear-gradient(135deg,#1a0a00,#2e1500)">🍁</div><div class="t-name">Autumn Cafe</div></div>
+      <div class="t-card" onclick="usePrompt('Crystal cave with glowing gems and underground waterfall, fantasy')"><div class="t-thumb" style="background:linear-gradient(135deg,#001820,#002030)">💎</div><div class="t-name">Crystal Cave</div></div>
+    </div>
+
+  </div>
+
+  <!-- ===== GALLERY ===== -->
+  <div class="section" id="sec-gallery">
+    <div class="hero" style="padding-bottom:8px">
+      <div class="hero-badge" style="background:rgba(162,89,255,0.08);border-color:rgba(162,89,255,0.2);color:#a259ff"><div class="badge-dot" style="background:#a259ff;box-shadow:0 0 8px #a259ff"></div>My Gallery</div>
+      <h1>Your AI<br><span style="background:linear-gradient(90deg,#a259ff,#ff6eb4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Masterpieces</span></h1>
+    </div>
+    <div id="full-gallery">
+      <div class="empty-state">
+        <div class="empty-icon">🎨</div>
+        <div class="empty-text">No creations yet!</div>
+        <div class="empty-sub">Generate your first image to see it here</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Fullscreen Viewer -->
+<div class="viewer" id="viewer" onclick="closeViewer()">
+  <div class="viewer-img-wrap" onclick="event.stopPropagation()">
+    <img id="viewer-img" src="" alt="">
+  </div>
+  <div class="viewer-bar" onclick="event.stopPropagation()">
+    <div class="viewer-btn" onclick="closeViewer()">✕ Close</div>
+    <a class="viewer-btn blue" id="viewer-dl" href="" download="auragen.png">⬇ Save</a>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-image" onclick="switchTab('image',null,'image')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    <span class="nav-lbl">Home</span>
+  </div>
+  <div class="nav-item" id="nav-gallery" onclick="switchTab('gallery',null,'gallery')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+    <span class="nav-lbl">Gallery</span>
+  </div>
+</div>
+
+<script>
+const WORKER_URL = "https://auragen-worker.vinodkumarpursh.workers.dev/";
+let savedImages = [], promptHistory = [], imgCount = 0, todayCount = 0, selectedQuality = 'balanced';
+let loadInterval = null;
+
+const RANDOM_PROMPTS = [
+  "A majestic white tiger in a neon-lit cyberpunk city, rain reflecting lights",
+  "Ancient temple ruins covered in glowing vines, mystical fog, fantasy",
+  "An astronaut discovering an alien ocean planet, bioluminescent creatures",
+  "A beautiful Indian princess with peacock feathers, golden jewelry, regal",
+  "Futuristic flying cars in a sunset cityscape, blade runner aesthetic",
+  "A wizard casting lightning spell in a dark forest, epic fantasy",
+  "Underwater city with glass domes, colorful fish, sunrays piercing water",
+  "A snow leopard on Himalayan peaks, golden hour, majestic portrait",
+  "Steampunk airship fleet above clouds, warm afternoon light",
+  "A lone samurai on a moonlit bridge, cherry blossoms falling, cinematic",
+  "Dragon made of northern lights, aurora borealis, epic scale",
+  "Cozy treehouse village in a magical forest, fireflies and lanterns",
+  "A phoenix rising from golden flames, mythology, breathtaking",
+  "Robot exploring ancient ruins on Mars, red sky, discovery",
+];
+
+const styleMap = {
+  "Photorealistic":"photorealistic, hyperdetailed, 8K DSLR quality, sharp focus, professional photography",
+  "Anime":"anime style, vibrant colors, Studio Ghibli inspired, detailed illustration, manga art",
+  "Oil Paint":"oil painting, classical art, thick brushstrokes, renaissance masterpiece quality",
+  "3D Render":"3D render, octane render, unreal engine 5, volumetric lighting, cinema 4D",
+  "Sketch":"detailed pencil sketch, fine linework, black and white, artistic illustration",
+  "Watercolor":"delicate watercolor painting, soft washes, artistic, fluid colors",
+  "Pixel Art":"pixel art, retro game style, 16-bit, vibrant colors, detailed sprites",
+  "Cinematic":"cinematic photography, movie still, dramatic lighting, anamorphic lens, epic scale",
+};
+const moodMap = {
+  "Dramatic":"dramatic tension, high contrast, intense atmosphere",
+  "Peaceful":"serene, peaceful, soft light, tranquil",
+  "Dark":"dark and moody, gothic, deep shadows",
+  "Vibrant":"vibrant colors, energetic, vivid, colorful",
+  "Minimal":"minimalist, clean, simple composition",
+  "Epic":"epic scale, majestic, breathtaking, awe-inspiring",
+};
+const qualityMap = {
+  "fast":"8 inference steps",
+  "balanced":"20 inference steps, high quality",
+  "premium":"35 inference steps, ultra premium quality, highly detailed",
+};
+
+// ===== SIDEBAR =====
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sb-overlay');
+  const btn = document.getElementById('menu-btn');
+  const isOpen = sb.classList.contains('open');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('open');
+  document.getElementById('menu-btn').classList.remove('open');
+}
+function navTo(tab) { closeSidebar(); switchTab(tab, null, tab); }
+function shareApp() {
+  if (navigator.share) navigator.share({ title: 'AuraGen AI', text: 'Amazing AI image generator!', url: window.location.href });
+  else { navigator.clipboard?.writeText(window.location.href); alert('Link copied!'); }
+  closeSidebar();
+}
+function showAbout() { alert('AuraGen AI v2.0\n\nPowered by Google Gemini AI\n🎨 Image Generation\n🖼️ Gallery\n\nFree to use!'); closeSidebar(); }
+function clearHistory() {
+  if (confirm('Clear all prompt history?')) {
+    promptHistory = [];
+    renderHistory();
+    closeSidebar();
+  }
+}
+
+// ===== TABS =====
+function switchTab(tab, tabEl, navId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + tab).classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
+  else {
+    const tabMap = { image: 0, gallery: 1 };
+    const tabs = document.querySelectorAll('.nav-tab');
+    if (tabMap[tab] !== undefined) tabs[tabMap[tab]].classList.add('active');
+  }
+  const navEl = document.getElementById('nav-' + tab);
+  if (navEl) navEl.classList.add('active');
+}
+
+// ===== CHIPS =====
+function selectChip(el, group) {
+  el.closest('.chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectRatio(el) {
+  document.querySelectorAll('.ratio-btn').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectQuality(el, q) {
+  document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedQuality = q;
+}
+
+// ===== PROMPT =====
+function updateCount() {
+  const v = document.getElementById('img-prompt').value.length;
+  document.getElementById('char-count').textContent = v + '/400';
+}
+function addHint(text) {
+  const t = document.getElementById('img-prompt');
+  t.value = t.value.trim() ? t.value.trim() + ', ' + text : text;
+  updateCount(); t.focus();
+}
+function usePrompt(text) {
+  document.getElementById('img-prompt').value = text;
+  updateCount();
+  document.getElementById('img-prompt').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearPrompt() { document.getElementById('img-prompt').value = ''; updateCount(); }
+function randomPrompt() {
+  const p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
+  usePrompt(p);
+}
+async function enhancePrompt() {
+  const prompt = document.getElementById('img-prompt').value.trim();
+  if (!prompt) { alert('Pehle kuch likho!'); return; }
+  const btn = document.getElementById('enhance-btn');
+  btn.classList.add('loading-spin');
+  btn.disabled = true;
+  // Simple enhancement without API - add quality keywords
+  const style = document.querySelector('#style-chips .chip.active')?.querySelector('span')?.textContent || 'Photorealistic';
+  const enhanced = `${prompt}, ${styleMap[style] || ''}, ultra detailed, professional quality, award winning`;
+  setTimeout(() => {
+    document.getElementById('img-prompt').value = enhanced;
+    updateCount();
+    btn.classList.remove('loading-spin');
+    btn.disabled = false;
+  }, 800);
+}
+function toggleNeg() {
+  const box = document.getElementById('neg-box');
+  const arrow = document.getElementById('neg-arrow');
+  box.classList.toggle('show');
+  arrow.classList.toggle('open');
+}
+
+// ===== LOADING STEPS =====
+function startLoadingSteps() {
+  let step = 1;
+  document.getElementById('step1').className = 'load-step active';
+  document.getElementById('step2').className = 'load-step';
+  document.getElementById('step3').className = 'load-step';
+  const steps = [
+    { title: 'Analyzing your prompt...', sub: 'Gemini is understanding your vision' },
+    { title: 'Generating image...', sub: 'AI is painting your masterpiece' },
+    { title: 'Finalizing details...', sub: 'Adding finishing touches' },
+  ];
+  loadInterval = setInterval(() => {
+    if (step < 3) {
+      document.getElementById('step' + step).className = 'load-step done';
+      step++;
+      document.getElementById('step' + step).className = 'load-step active';
+      document.getElementById('load-title').textContent = steps[step-1].title;
+      document.getElementById('load-sub').textContent = steps[step-1].sub;
+    }
+  }, 5000);
+}
+function stopLoadingSteps() {
+  clearInterval(loadInterval);
+  [1,2,3].forEach(i => document.getElementById('step'+i).className = 'load-step done');
+}
+
+// ===== GENERATE =====
+async function generateImage() {
+  const prompt = document.getElementById('img-prompt').value.trim();
+  if (!prompt) { document.getElementById('img-prompt').focus(); return; }
+
+  const style = document.querySelector('#style-chips .chip.active')?.querySelector('span')?.textContent || 'Photorealistic';
+  const mood = document.querySelector('#mood-chips .chip.active')?.querySelector('span')?.textContent || 'Dramatic';
+  const ratio = document.querySelector('.ratio-btn.active span')?.textContent?.trim() || '9:16';
+  const negPrompt = document.getElementById('neg-prompt').value.trim();
+
+  const loading = document.getElementById('load-card');
+  const btn = document.getElementById('gen-btn');
+  loading.classList.add('show');
+  btn.disabled = true;
+  startLoadingSteps();
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, style, mood, ratio, negPrompt, quality: selectedQuality })
+    });
+    const data = await res.json();
+    if (data.success && data.image) {
+      stopLoadingSteps();
+      addToGallery(data.image, prompt);
+      addToHistory(prompt);
+      imgCount++; todayCount++;
+      document.getElementById('stat-imgs').textContent = imgCount;
+      document.getElementById('stat-today').textContent = todayCount;
+    } else {
+      alert('Error: ' + (data.error || 'Try again!') + '\n' + (data.details?.substring(0,200) || ''));
+    }
+  } catch(err) {
+    alert('Error: ' + String(err));
+  } finally {
+    loading.classList.remove('show');
+    btn.disabled = false;
+    clearInterval(loadInterval);
+  }
+}
+
+function addToGallery(url, prompt) {
+  savedImages.unshift({ url, prompt });
+  const gallery = document.getElementById('img-gallery');
+  gallery.querySelectorAll('.placeholder-card').forEach(p => p.remove());
+  const item = document.createElement('div');
+  item.className = 'g-item large';
+  item.onclick = () => openViewer(url);
+  item.innerHTML = `<img src="${url}" alt="${prompt}" loading="lazy">
+    <div class="g-overlay">
+      <div class="g-prompt">${prompt}</div>
+      <a href="${url}" download="auragen-${Date.now()}.png" onclick="event.stopPropagation()" class="g-save">⬇ Save</a>
+    </div>`;
+  gallery.prepend(item);
+  item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateFullGallery();
+}
+
+function updateFullGallery() {
+  const fg = document.getElementById('full-gallery');
+  if (!savedImages.length) return;
+  fg.innerHTML = '<div class="full-gallery-grid"></div>';
+  const grid = fg.querySelector('.full-gallery-grid');
+  savedImages.forEach((img, i) => {
+    const item = document.createElement('div');
+    item.className = 'g-item' + (i === 0 ? ' large' : '');
+    item.style.animation = `fadeUp 0.4s ease ${i * 0.05}s both`;
+    item.onclick = () => openViewer(img.url);
+    item.innerHTML = `<img src="${img.url}" alt="${img.prompt}" loading="lazy">
+      <div class="g-overlay">
+        <div class="g-prompt">${img.prompt}</div>
+        <a href="${img.url}" download="auragen-${i}.png" onclick="event.stopPropagation()" class="g-save">⬇</a>
+      </div>`;
+    grid.appendChild(item);
+  });
+}
+
+function addToHistory(prompt) {
+  if (!promptHistory.includes(prompt)) {
+    promptHistory.unshift(prompt);
+    if (promptHistory.length > 10) promptHistory.pop();
+    renderHistory();
+  }
+}
+function renderHistory() {
+  const wrap = document.getElementById('history-wrap');
+  const list = document.getElementById('history-list');
+  if (!promptHistory.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = promptHistory.map(p =>
+    `<div class="history-item" onclick="usePrompt('${p.replace(/'/g,"\\'")}')">🕐 ${p.substring(0,40)}${p.length>40?'...':''}</div>`
+  ).join('');
+}
+
+function openViewer(url) {
+  document.getElementById('viewer-img').src = url;
+  document.getElementById('viewer-dl').href = url;
+  document.getElementById('viewer').classList.add('open');
+}
+function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
+</script>
+</body>
+</html>
